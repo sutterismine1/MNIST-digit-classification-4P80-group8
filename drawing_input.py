@@ -1,3 +1,4 @@
+# opens a tkinter sketch pad and converts a user drawn digit to a 28x28 matrix (grayscale) 
 from tkinter import *
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
