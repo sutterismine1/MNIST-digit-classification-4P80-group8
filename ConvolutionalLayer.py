@@ -47,6 +47,7 @@ class ConvolutionalLayer:
 
         self.first_layer = False
 
+    # Feed x through the layer
     def apply(self, x):
         assert len(x) == self.kernel_z, "Number of channels does not match kernel_z"
         self.feature_maps = []
@@ -96,11 +97,16 @@ class ConvolutionalLayer:
         return feature_map
 
     # ReLU
+    # self.d_activated_maps is the derivative of the ReLU function
+    # 1 for positive values, and 0 for negative values
     def __activate(self, i, j, layer):
         x = self.feature_maps[layer][i][j]
         self.d_activated_maps[layer][i][j] = 0 if x < 0 else 1
         return 0 if x < 0 else x
 
+    # Max Pool layer
+    # self.d_pool keeps track of the derivative of the pooling layer. 
+    # For max pooling, the winning position receives a 1, while the other positions are 0.
     def __max_pool(self, i, j, layer):
         maximum = float("-inf")
         max_i = 0
@@ -116,6 +122,12 @@ class ConvolutionalLayer:
         self.d_pool[layer][max_i][max_j] = 1
         return maximum
 
+
+    # !!! NEED TO FIX THIS !!!
+    # Apply BP learning to convolutional layer
+    # Based on:
+    # https://www.youtube.com/watch?v=Pn7RK7tofPg
+    # https://www.youtube.com/watch?v=vbUozbkMhI0
     def learn(self, prop_error):
         # dL/dP passed in as prop_error
 
@@ -144,7 +156,7 @@ class ConvolutionalLayer:
             self.kernels[i] -= self.learning_rate * self.convolve_2D_outer(self.input, error) # dL/dK
             self.biases[i] -= self.learning_rate * np.sum(error)  # dL/dB
 
-        return dL_dX
+        return dL_dX    # propagate error backwards
 
     # 3D-3D -> 3D output
     def convolve_3D(self, x, kernel):

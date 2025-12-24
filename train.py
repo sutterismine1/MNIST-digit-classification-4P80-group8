@@ -42,8 +42,6 @@ def main():
     assert 'output_filename' in config, "The config must provide a value for \'output_filename\'"
     output_filename = config['output_filename']
 
-    output_filename
-
     # Load MINST dataset
     mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
 
@@ -64,7 +62,7 @@ def main():
     output_file.write("Epoch, Training Set, Test Set\n")
     output_file.flush()
 
-    step = 0
+    step = 0    # used to keep track of how many samples have been trained on
     for epoch in range(epochs):
         global_error = 0
         for index in data_map:
@@ -86,7 +84,7 @@ def main():
         global_test_error = 0
         correct = 0
         for i in range(len(x_train)):
-            image, digit = x_train[i], y_train[i]
+            image, digit = x_train[i], y_train[i]   # Just testing on the training set until the CNN is correct
             o = network.apply(image)
 
             global_test_error += loss_function(o, digit)
@@ -108,7 +106,6 @@ def main():
 
 
 # Mean Squared error accross output vector
-# y is in range 0-9
 def calculate_error_MSE(o, y):
     expected_output = [0.0 for _ in range(len(o))]
     expected_output[y] = 1.0
@@ -124,7 +121,7 @@ def calculate_error_CCE(o, y):
 
     return -np.sum(expected_output * np.log(o)) / len(o)
 
-
+# Take highest value as the winner
 def find_winner(o):
     high = o[0]
     high_index = 0

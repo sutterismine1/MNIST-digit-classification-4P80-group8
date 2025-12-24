@@ -78,7 +78,7 @@ class FullyConnectedLayer:
         # derivative of sigmoid * derivative of mean squared error
         # self.error = self.output * (1 - self.output) * (self.output - expected_output)
 
-        # For Categorical Cross-Entropy
+        # For Categorical Cross-Entropy (CCE)
         # The derivative of sigmoid cancels out the denominator of Cross-Entropy derivative, simplifying down to y_hat - y
         self.error = self.output - expected_output
             

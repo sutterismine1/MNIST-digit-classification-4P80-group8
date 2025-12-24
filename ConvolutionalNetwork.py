@@ -4,6 +4,8 @@
 # Nicholas Parise       7242530
 #
 # Convolutional Network Class
+# Accepts a valid JSON config.
+# Has 1+ convolutional layers (with ReLU and Max Pooling) and 0+ fully connected layers using Sigmoid and SoftMax
 
 from ConvolutionalLayer import *
 from FullyConnectedLayer import *
@@ -18,7 +20,7 @@ class ConvolutionalNetwork:
         assert 'convolutional_layers' in config, "The config must provide an array for \'convolutional_layers\'"
         assert len(config['convolutional_layers']) >= 1, "\'convolutional_layers\' must not be empty"
         
-        prev_nodes = 28     # number of nodes in one dimension
+        prev_nodes = 28     # number of nodes in one dimension, hardcoded for this image but can make more general later
         kernel_z = 1        # depth of kernel. Starts as 1 for the single channel image
         self.convolutional_layers = []
         for conv_layer in config['convolutional_layers']:
@@ -37,7 +39,7 @@ class ConvolutionalNetwork:
                 self.fully_connected_layers.append(FullyConnectedLayer(self.learning_rate, prev_nodes, fc_layer['node_count'], hidden=True))
                 prev_nodes = fc_layer['node_count']
 
-        self.output_layer = FullyConnectedLayer(self.learning_rate, prev_nodes, 10, hidden=False) # add output layer
+        self.output_layer = FullyConnectedLayer(self.learning_rate, prev_nodes, 10, hidden=False) # add output layer, hardcoded 10 classes
 
     # Feed a sample x through the network, and apply backpropagation learning
     def apply_and_learn(self, x, y):
@@ -45,6 +47,7 @@ class ConvolutionalNetwork:
         self.__learn(y)
         return o
 
+    # Feed x through the network and receive o (output)
     def apply(self, x):
         channels = np.array([x]) # z, x, y
         # feed data through convolutional layers
