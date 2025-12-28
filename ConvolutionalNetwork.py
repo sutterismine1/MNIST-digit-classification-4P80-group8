@@ -26,7 +26,7 @@ class ConvolutionalNetwork:
         for conv_layer in config['convolutional_layers']:
             self.convolutional_layers.append(ConvolutionalLayer(conv_layer, self.learning_rate, kernel_z))
             kernel_z = conv_layer['kernel_count']
-            prev_nodes = prev_nodes - conv_layer['kernel_dim'] - conv_layer['padding'] + 1
+            prev_nodes = prev_nodes - conv_layer['kernel_dim'] + conv_layer['padding']*2 + 1
             prev_nodes = prev_nodes // conv_layer['pooling_dim']
         self.convolutional_layers[0].set_first_layer(True)
 
