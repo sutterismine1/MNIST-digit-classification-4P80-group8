@@ -83,7 +83,7 @@ class ConvolutionalLayer:
 
     # 3D-3D convolution -> 2D output map
     def convolve_kernel(self, x, kernel):
-        feature_map = np.empty([
+        feature_map = np.zeros([
             len(x[0]) - len(kernel[0]) + 1,      # x_dim of feature maps
             len(x[0][0]) - len(kernel[0][0]) + 1     # y_dim of feature maps
         ])
@@ -92,7 +92,7 @@ class ConvolutionalLayer:
             for i in range(len(feature_map)):
                 for j in range(len(feature_map[0])):
                     view = x[channel, i:i + len(kernel[0]), j:j + len(kernel[0][0])]
-                    feature_map[i][j] = np.sum(view * kernel[channel]) # dot product of kernel and view
+                    feature_map[i][j] += np.sum(view * kernel[channel]) # dot product of kernel and view
 
         return feature_map
 
@@ -101,8 +101,8 @@ class ConvolutionalLayer:
     # 1 for positive values, and 0 for negative values
     def __activate(self, i, j, layer):
         x = self.feature_maps[layer][i][j]
-        self.d_activated_maps[layer][i][j] = -0.01 if x < 0 else 1
-        return -0.01*x if x < 0 else x
+        self.d_activated_maps[layer][i][j] = 0 if x < 0 else 1
+        return 0 if x < 0 else x
 
     # Max Pool layer
     # self.d_pool keeps track of the derivative of the pooling layer. 
@@ -150,7 +150,7 @@ class ConvolutionalLayer:
             for k, kernel in enumerate(self.kernels):
                 for channel in range(self.kernel_z):
                     # !!! I don't think this is right !!!
-                    dL_dX[channel] += self.convolve_2D(np.pad(dL_dZ[k:k+1], ((0,0), (self.kernel_x-1, self.kernel_x-1), (self.kernel_y-1, self.kernel_y-1))), np.rot90(kernel[channel], 2))
+                    dL_dX[channel] += self.convolve_2D(np.pad(dL_dZ, ((0, 0), (self.kernel_x-1, self.kernel_x-1), (self.kernel_y-1, self.kernel_y-1))), np.rot90(kernel[channel], 2))
         # Calculate weight and bias adjustments for each kernel
         for i, error in enumerate(dL_dZ):
             dL_dK = self.convolve_2D_outer(self.input, error)

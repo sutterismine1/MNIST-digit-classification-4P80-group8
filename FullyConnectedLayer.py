@@ -63,7 +63,7 @@ class FullyConnectedLayer:
         for i in range(len(x)):
             res += x[i] * self.weights[i][node]   # sum(input * weight)
         
-        return self.__activate(res + self.biases[node])
+        return res
 
     # activation function (sigmoid)
     def __activate(self, x):
