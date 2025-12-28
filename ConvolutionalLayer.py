@@ -9,8 +9,8 @@ import random
 import numpy as np
 
 # Params for random initialization of Kenrel weights
-RANGE = 0.5
-BASE = -0.25
+RANGE = 1
+BASE = 0
 LOWEST_VAL = 0.001
 
 class ConvolutionalLayer:
@@ -43,7 +43,7 @@ class ConvolutionalLayer:
 
                         kernel[i][j][k] = val
 
-        self.biases = [0 for _ in range(self.kernel_count)]
+        self.biases = [0.01 for _ in range(self.kernel_count)]
 
         self.first_layer = False
 
@@ -83,16 +83,16 @@ class ConvolutionalLayer:
 
     # 3D-3D convolution -> 2D output map
     def convolve_kernel(self, x, kernel):
-        feature_map = np.zeros([
-            len(x[0]) - len(kernel[0]) - self.padding + 1,      # x_dim of feature maps
-            len(x[0][0]) - len(kernel[0][0]) - self.padding + 1     # y_dim of feature maps
+        feature_map = np.empty([
+            len(x[0]) - len(kernel[0]) + 1,      # x_dim of feature maps
+            len(x[0][0]) - len(kernel[0][0]) + 1     # y_dim of feature maps
         ])
 
         for channel in range(len(kernel)):
-            for i in range(len(x[0]) - len(kernel[0])):
-                for j in range(len(x[0][0]) - len(kernel[0][0])):
+            for i in range(len(feature_map)):
+                for j in range(len(feature_map[0])):
                     view = x[channel, i:i + len(kernel[0]), j:j + len(kernel[0][0])]
-                    feature_map[i][j] += np.sum(view * kernel[channel]) # dot product of kernel and view
+                    feature_map[i][j] = np.sum(view * kernel[channel]) # dot product of kernel and view
 
         return feature_map
 
@@ -101,8 +101,8 @@ class ConvolutionalLayer:
     # 1 for positive values, and 0 for negative values
     def __activate(self, i, j, layer):
         x = self.feature_maps[layer][i][j]
-        self.d_activated_maps[layer][i][j] = 0 if x < 0 else 1
-        return 0 if x < 0 else x
+        self.d_activated_maps[layer][i][j] = -0.01 if x < 0 else 1
+        return -0.01*x if x < 0 else x
 
     # Max Pool layer
     # self.d_pool keeps track of the derivative of the pooling layer. 
@@ -113,7 +113,7 @@ class ConvolutionalLayer:
         max_j = 0
         for k in range(self.pooling_dim):
             for l in range(self.pooling_dim):
-                val = self.feature_maps[layer][i+k][j+l]
+                val = self.actvitated_maps[layer][i+k][j+l]
                 if val > maximum:
                     maximum = val
                     max_i = i+k
@@ -147,13 +147,14 @@ class ConvolutionalLayer:
         dL_dX = None
         if not self.first_layer:    # Don't calculate if you are the first layer, since no preceeding layer needs the propagated error
             dL_dX = np.zeros(self.input.shape)
-            for kernel in self.kernels:
-                for i, layer in enumerate(kernel):
-                    dL_dX[i] += self.convolve_2D(np.pad(dL_dZ, pad_width=((0,0), (self.kernel_x-1,self.kernel_x-1), (self.kernel_y-1,self.kernel_y-1)), mode="constant", constant_values=0), np.rot90(layer, k=2))
-
+            for k, kernel in enumerate(self.kernels):
+                for channel in range(self.kernel_z):
+                    # !!! I don't think this is right !!!
+                    dL_dX[channel] += self.convolve_2D(np.pad(dL_dZ[k:k+1], ((0,0), (self.kernel_x-1, self.kernel_x-1), (self.kernel_y-1, self.kernel_y-1))), np.rot90(kernel[channel], 2))
         # Calculate weight and bias adjustments for each kernel
         for i, error in enumerate(dL_dZ):
-            self.kernels[i] -= self.learning_rate * self.convolve_2D_outer(self.input, error) # dL/dK
+            dL_dK = self.convolve_2D_outer(self.input, error)
+            self.kernels[i] -= self.learning_rate * dL_dK # dL/dK
             self.biases[i] -= self.learning_rate * np.sum(error)  # dL/dB
 
         return dL_dX    # propagate error backwards
@@ -162,13 +163,13 @@ class ConvolutionalLayer:
     def convolve_3D(self, x, kernel):
         res = np.zeros([
             len(x),                                                 # z_dim
-            len(x[0]) - len(kernel[0]) - self.padding + 1,          # x_dim 
-            len(x[0][0]) - len(kernel[0][0]) - self.padding + 1     # y_dim
+            len(x[0]) - len(kernel[0]) + 1,          # x_dim 
+            len(x[0][0]) - len(kernel[0][0]) + 1     # y_dim
         ])
 
-        for layer in range(len(x)):
-            for i in range(len(x[0]) - len(kernel[0])):
-                for j in range(len(x[0][0]) - len(kernel[0][0])):
+        for layer in range(len(res)):
+            for i in range(len(res[0])):
+                for j in range(len(res[0][0])):
                     view = x[layer, i:i + len(kernel[0]), j:j + len(kernel[0][0])]
                     res[layer][i][j] = np.sum(view * kernel[layer])
 
@@ -178,13 +179,13 @@ class ConvolutionalLayer:
     def convolve_2D_outer(self, x, kernel):
         res = np.zeros([
             len(x),                                                 # z_dim
-            len(x[0]) - len(kernel) - self.padding + 1,          # x_dim 
-            len(x[0][0]) - len(kernel[0]) - self.padding + 1     # y_dim
+            len(x[0]) - len(kernel) + 1,          # x_dim 
+            len(x[0][0]) - len(kernel[0]) + 1     # y_dim
         ])
 
-        for layer in range(len(x)):
-            for i in range(len(x[0]) - len(kernel)):
-                for j in range(len(x[0][0]) - len(kernel[0])):
+        for layer in range(len(res)):
+            for i in range(len(res[0])):
+                for j in range(len(res[0][0])):
                     view = x[layer, i:i + len(kernel), j:j + len(kernel[0])]
                     res[layer][i][j] = np.sum(view * kernel)
 
@@ -193,13 +194,13 @@ class ConvolutionalLayer:
     # 3D-2D -> 2D output
     def convolve_2D(self, x, kernel):
         res = np.zeros([
-            len(x[0]) - len(kernel) - self.padding + 1,          # x_dim 
-            len(x[0][0]) - len(kernel[0]) - self.padding + 1     # y_dim
+            len(x[0]) - len(kernel) + 1,          # x_dim 
+            len(x[0][0]) - len(kernel[0]) + 1     # y_dim
         ])
 
         for layer in range(len(x)):
-            for i in range(len(x[0]) - len(kernel)):
-                for j in range(len(x[0][0]) - len(kernel[0])):
+            for i in range(len(res)):
+                for j in range(len(res[0])):
                     view = x[layer, i:i + len(kernel), j:j + len(kernel[0])]
                     res[i][j] += np.sum(view * kernel)
 

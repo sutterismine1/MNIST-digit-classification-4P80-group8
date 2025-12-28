@@ -41,12 +41,20 @@ class FullyConnectedLayer:
     def apply(self, x):
         self.output = np.empty(len(self.weights[0]))
         self.input = x
-        for i in range(len(self.weights[0])):
-            self.output[i] = self.__evaluate_node(i, x)
-
-        if not self.hidden: # output layer, apply softmax
-            self.output = self.softmax(self.output)
+#        for i in range(len(self.weights[0])):
+#            self.output[i] = self.__evaluate_node(i, x)
+#
+#        if not self.hidden: # output layer, apply softmax
+#            self.output = self.softmax(self.output)
             
+        if self.hidden: # hidden node, apply sigmoid
+            for i in range(len(self.weights[0])):
+                self.output[i] = self.__activate(self.__evaluate_node(i, x) + self.biases[i])
+        else: # output layer, apply softmax
+            for i in range(len(self.weights[0])):
+                self.output[i] = self.__evaluate_node(i, x) + self.biases[i]
+            self.output = self.softmax(self.output)
+
         return self.output
 
     # Evaluate a single neuron given input vector x
@@ -76,10 +84,10 @@ class FullyConnectedLayer:
 
         # For Mean Squared Error (MSE)
         # derivative of sigmoid * derivative of mean squared error
-        # self.error = self.output * (1 - self.output) * (self.output - expected_output)
+        #self.error = self.output * (1 - self.output) * (self.output - expected_output)
 
         # For Categorical Cross-Entropy (CCE)
-        # The derivative of sigmoid cancels out the denominator of Cross-Entropy derivative, simplifying down to y_hat - y
+        # The derivative of softmax cancels out the denominator of Cross-Entropy derivative, simplifying down to y_hat - y
         self.error = self.output - expected_output
             
         next_error = np.zeros(len(self.weights))
@@ -108,13 +116,6 @@ class FullyConnectedLayer:
 
     # convert data vector to softmax vector
     def softmax(self, data):
-        output = np.empty(len(data))
-
-        denominator = 0
-        for val in data:    # calculate denominator
-            denominator += np.exp(val)
-
-        for i, val in enumerate(data):
-            output[i] = np.exp(val) / denominator
-
-        return output
+        z = data - np.max(data) # log-sum-exp trick to avoid overflow
+        exp_z = np.exp(z)
+        return exp_z / np.sum(exp_z)

@@ -42,20 +42,30 @@ def main():
     assert 'output_filename' in config, "The config must provide a value for \'output_filename\'"
     output_filename = config['output_filename']
 
+    print("Reading Data")
     # Load MINST dataset
     mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
 
     (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
 
-    x_train = x_train[:500] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
-    y_train = y_train[:500] # REMOVE AFTER
+    for i in range(len(x_train)):
+        for j in range(len(x_train[i])):
+            for k in range(len(x_train[i][j])):
+                x_train[i][j][j] = x_train[i][j][j] / 255
+    for i in range(len(x_test)):
+        for j in range(len(x_test[i])):
+            for k in range(len(x_test[i][j])):
+                x_test[i][j][j] = x_test[i][j][j] / 255
 
+    x_train = x_train[:16] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
+    y_train = y_train[:16] # REMOVE AFTER
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
 
     loss_function = calculate_error_CCE         # CHANGE LOSS FUNCTION HERE AND IN learn_output() OF FullyConnectedLayer.py
 
+    print("Initializing Network")
     network = ConvolutionalNetwork(config)
 
     output_file = open(output_filename+".csv", "w")
@@ -112,7 +122,7 @@ def calculate_error_MSE(o, y):
     
     res = (o - expected_output)**2
 
-    return res / len(o)
+    return np.mean(res)
 
 # Categorical Cross-Entropy
 def calculate_error_CCE(o, y):
