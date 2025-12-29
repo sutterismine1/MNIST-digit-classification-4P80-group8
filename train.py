@@ -113,10 +113,10 @@ def main():
             #TODO put back I just don't wanna see all this shit
             #print(f"Result: {prediction == digit}, Confidence: {confidence}%, Output: {o}")
 
-        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_test)}\n")
+        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_train)}\n")
         output_file.flush()
 
-        print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
+        print(f"Test Correct: {correct / len(x_train) * 100}%, Global Test Error: {global_test_error / len(x_train)}")
 
     output_file.close()
 

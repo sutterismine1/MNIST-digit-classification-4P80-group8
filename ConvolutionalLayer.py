@@ -37,11 +37,11 @@ class ConvolutionalLayer:
             for i in range(len(kernel)): 
                 for j in range(len(kernel[0])):
                     for k in range(len(kernel[0][0])):
-                        #val = random.random() * RANGE + BASE
-                        #while abs(val) < LOWEST_VAL:     # Guarentee starting weights are not too small
-                        #    val = random.random() * RANGE + BASE
-                        #kernel[i][j][k] = val
-                        kernel[i][j][k] = np.random.uniform(-0.25, 0.25)
+                        val = random.random() * RANGE + BASE
+                        while abs(val) < LOWEST_VAL:     # Guarentee starting weights are not too small
+                            val = random.random() * RANGE + BASE
+                        kernel[i][j][k] = val
+                        #kernel[i][j][k] = np.random.uniform(-0.25, 0.25)
 
 
         self.biases = [0.01 for _ in range(self.kernel_count)]
