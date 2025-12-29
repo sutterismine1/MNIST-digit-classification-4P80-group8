@@ -49,19 +49,16 @@ def main():
 
     (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
 
-    for i in range(len(x_train)):
-        for j in range(len(x_train[i])):
-            for k in range(len(x_train[i][j])):
-                x_train[i][j][k] = x_train[i][j][k] / 255
-    for i in range(len(x_test)):
-        for j in range(len(x_test[i])):
-            for k in range(len(x_test[i][j])):
-                x_test[i][j][k] = x_test[i][j][k] / 255
-
-    x_train = x_train[:10000] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
+    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
     y_train = y_train[:10000] # REMOVE AFTER
     x_test = x_test[:2000]
     y_test = y_test[:2000]
+    
+    x_train = np.array(x_train, dtype=float) / 255.0
+    x_test  = np.array(x_test, dtype=float) / 255.0
+
+    print(f"x_train min/max: {x_train.min()}/{x_train.max()}")
+    print(f"x_test min/max: {x_test.min()}/{x_test.max()}")
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
@@ -117,7 +114,6 @@ def main():
         print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
         
 
-
     output_file.close()
 
 
@@ -132,10 +128,10 @@ def calculate_error_MSE(o, y):
 
 # Categorical Cross-Entropy
 def calculate_error_CCE(o, y):
-    expected_output = [0.0 for _ in range(len(o))]
+    expected_output = np.zeros_like(o)
     expected_output[y] = 1.0
 
-    clip_val = 1e-12
+    clip_val = 1e-9
     o = np.clip(o, clip_val, 1.0 - clip_val) # avoid log(0) by clipping with a small value
 
     return -np.sum(expected_output * np.log(o))
