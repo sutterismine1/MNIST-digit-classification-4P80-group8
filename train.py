@@ -35,6 +35,7 @@ def main():
     # Seed PRNG
     assert 'seed' in config, "The config must provide a value for \'seed\'"
     random.seed(config['seed'])
+    np.random.seed(config['seed'])
 
     assert 'epochs' in config, "The config must provide a value for \'epochs\'"
     epochs = config['epochs']
@@ -51,14 +52,16 @@ def main():
     for i in range(len(x_train)):
         for j in range(len(x_train[i])):
             for k in range(len(x_train[i][j])):
-                x_train[i][j][j] = x_train[i][j][j] / 255
+                x_train[i][j][k] = x_train[i][j][k] / 255
     for i in range(len(x_test)):
         for j in range(len(x_test[i])):
             for k in range(len(x_test[i][j])):
-                x_test[i][j][j] = x_test[i][j][j] / 255
+                x_test[i][j][k] = x_test[i][j][k] / 255
 
-    x_train = x_train[:16] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
-    y_train = y_train[:16] # REMOVE AFTER
+    x_train = x_train[:10000] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
+    y_train = y_train[:10000] # REMOVE AFTER
+    x_test = x_test[:2000]
+    y_test = y_test[:2000]
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
@@ -72,8 +75,9 @@ def main():
     output_file.write("Epoch, Training Set, Test Set\n")
     output_file.flush()
 
+    print("Starting Training")
     step = 0    # used to keep track of how many samples have been trained on
-    for epoch in range(epochs):
+    for epoch in range(1, epochs+1):
         global_error = 0
         for index in data_map:
             o = network.apply_and_learn(x_train[index], y_train[index])
@@ -89,12 +93,12 @@ def main():
             r1, r2 = random.randint(0, len(x_train)-1), random.randint(0, len(x_train)-1)
             data_map[r1], data_map[r2] = data_map[r2], data_map[r1]
 
-        print(f"Finished Epoch: {epoch}, Global Training Error: {global_error / len(x_train)}")
+        
 
         global_test_error = 0
         correct = 0
-        for i in range(len(x_train)):
-            image, digit = x_train[i], y_train[i]   # Just testing on the training set until the CNN is correct
+        for i in range(len(x_test)):
+            image, digit = x_test[i], y_test[i]   # Just testing on the training set until the CNN is correct
             o = network.apply(image)
 
             global_test_error += loss_function(o, digit)
@@ -104,12 +108,14 @@ def main():
             if prediction == digit:
                 correct += 1
 
-            print(f"Result: {prediction == digit}, Confidence: {confidence}%, Output: {o}")
+            print(f"Result: {prediction == digit}, Confidence: {confidence * 100}%, Output: {o}")
 
-        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_train)}\n")
+        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_test)}\n")
         output_file.flush()
 
-        print(f"Test Correct: {correct / len(x_train) * 100}%, Global Test Error: {global_test_error / len(x_train)}")
+        print(f"Finished Epoch: {epoch}, Global Training Error: {global_error / len(x_train)}")
+        print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
+        
 
 
     output_file.close()
@@ -129,7 +135,10 @@ def calculate_error_CCE(o, y):
     expected_output = [0.0 for _ in range(len(o))]
     expected_output[y] = 1.0
 
-    return -np.sum(expected_output * np.log(o)) / len(o)
+    clip_val = 1e-12
+    o = np.clip(o, clip_val, 1.0 - clip_val) # avoid log(0) by clipping with a small value
+
+    return -np.sum(expected_output * np.log(o))
 
 # Take highest value as the winner
 def find_winner(o):
