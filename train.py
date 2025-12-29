@@ -35,6 +35,7 @@ def main():
     # Seed PRNG
     assert 'seed' in config, "The config must provide a value for \'seed\'"
     random.seed(config['seed'])
+    np.random.seed(config['seed'])
 
     assert 'epochs' in config, "The config must provide a value for \'epochs\'"
     epochs = config['epochs']
@@ -47,24 +48,17 @@ def main():
     mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
 
     (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
-    '''
-    for i in range(len(x_train)):
-        for j in range(len(x_train[i])):
-            for k in range(len(x_train[i][j])):
-                x_train[i][j][j] = x_train[i][j][j] / 255
-    for i in range(len(x_test)):
-        for j in range(len(x_test[i])):
-            for k in range(len(x_test[i][j])):
-                x_test[i][j][j] = x_test[i][j][j] / 255
-    '''
+
+    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
+    y_train = y_train[:10000] # REMOVE AFTER
+    x_test = x_test[:2000]
+    y_test = y_test[:2000]
+    
     x_train = np.array(x_train, dtype=float) / 255.0
     x_test  = np.array(x_test, dtype=float) / 255.0
 
     print(f"x_train min/max: {x_train.min()}/{x_train.max()}")
     print(f"x_test min/max: {x_test.min()}/{x_test.max()}")
-
-    x_train = x_train[:1000] # REMOVE AFTER, just doing 500 samples to test correctness of learning algorithm implementation
-    y_train = y_train[:1000] # REMOVE AFTER
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
@@ -78,8 +72,9 @@ def main():
     output_file.write("Epoch, Training Set, Test Set\n")
     output_file.flush()
 
+    print("Starting Training")
     step = 0    # used to keep track of how many samples have been trained on
-    for epoch in range(epochs):
+    for epoch in range(1, epochs+1):
         global_error = 0
         for index in data_map:
             o = network.apply_and_learn(x_train[index], y_train[index])
@@ -95,13 +90,12 @@ def main():
             r1, r2 = random.randint(0, len(x_train)-1), random.randint(0, len(x_train)-1)
             data_map[r1], data_map[r2] = data_map[r2], data_map[r1]
 
-        print(f"Finished Epoch: {epoch}, Global Training Error: {global_error / len(x_train)}")
+        
 
         global_test_error = 0
         correct = 0
-        for i in range(len(x_train)):
-            #image, digit = x_train[i], y_train[i]   # Just testing on the training set until the CNN is correct
-            image, digit = x_test[i], y_test[i]
+        for i in range(len(x_test)):
+            image, digit = x_test[i], y_test[i]   # Just testing on the training set until the CNN is correct
             o = network.apply(image)
 
             global_test_error += loss_function(o, digit)
@@ -110,13 +104,15 @@ def main():
 
             if prediction == digit:
                 correct += 1
-            #TODO put back I just don't wanna see all this shit
-            #print(f"Result: {prediction == digit}, Confidence: {confidence}%, Output: {o}")
 
-        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_train)}\n")
+            print(f"Result: {prediction == digit}, Confidence: {confidence * 100}%, Output: {o}")
+
+        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_test)}\n")
         output_file.flush()
 
-        print(f"Test Correct: {correct / len(x_train) * 100}%, Global Test Error: {global_test_error / len(x_train)}")
+        print(f"Finished Epoch: {epoch}, Global Training Error: {global_error / len(x_train)}")
+        print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
+        
 
     output_file.close()
 
@@ -134,8 +130,11 @@ def calculate_error_MSE(o, y):
 def calculate_error_CCE(o, y):
     expected_output = np.zeros_like(o)
     expected_output[y] = 1.0
-    # return -np.sum(expected_output * np.log(o+1e-9)) / len(o)
-    return -np.log(o[y] + 1e-9)
+
+    clip_val = 1e-9
+    o = np.clip(o, clip_val, 1.0 - clip_val) # avoid log(0) by clipping with a small value
+
+    return -np.sum(expected_output * np.log(o))
 
 # Take highest value as the winner
 def find_winner(o):

@@ -8,13 +8,7 @@
 import random
 import numpy as np
 
-# Params for random initialization of Kenrel weights
-RANGE = 1
-BASE = 0
-LOWEST_VAL = 0.001
-
 class ConvolutionalLayer:
-
     def __init__(self, config, learning_rate, kernel_z):
         self.learning_rate = learning_rate
 
@@ -32,19 +26,14 @@ class ConvolutionalLayer:
         self.pooling_dim = config['pooling_dim'] 
 
         self.kernels = [np.empty((self.kernel_z, self.kernel_x, self.kernel_y)) for _ in range(self.kernel_count)]  # z, x, y
+        # scale standard deviation depending on layer size
+        # https://medium.com/@tylernisonoff/weight-initialization-for-cnns-a-deep-dive-into-he-initialization-50b03f37f53d
+        std = np.sqrt(2.0 / (self.kernel_z * self.kernel_x * self.kernel_y)) 
         # randomly initialize weights
         for kernel in self.kernels:
-            for i in range(len(kernel)): 
-                for j in range(len(kernel[0])):
-                    for k in range(len(kernel[0][0])):
-                        val = random.random() * RANGE + BASE
-                        while abs(val) < LOWEST_VAL:     # Guarentee starting weights are not too small
-                            val = random.random() * RANGE + BASE
-                        kernel[i][j][k] = val
-                        #kernel[i][j][k] = np.random.uniform(-0.25, 0.25)
+            kernel[:] = np.random.randn(self.kernel_z, self.kernel_x, self.kernel_y) * std
 
-
-        self.biases = [0.01 for _ in range(self.kernel_count)]
+        self.biases = np.zeros(self.kernel_count)
 
         self.first_layer = False
 

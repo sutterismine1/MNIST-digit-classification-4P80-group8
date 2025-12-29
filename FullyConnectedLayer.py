@@ -41,11 +41,6 @@ class FullyConnectedLayer:
     def apply(self, x):
         self.output = np.empty(len(self.weights[0]))
         self.input = x
-#        for i in range(len(self.weights[0])):
-#            self.output[i] = self.__evaluate_node(i, x)
-#
-#        if not self.hidden: # output layer, apply softmax
-#            self.output = self.softmax(self.output)
             
 #        if self.hidden: # hidden node, apply sigmoid
 #            for i in range(len(self.weights[0])):
