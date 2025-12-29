@@ -47,13 +47,23 @@ class FullyConnectedLayer:
 #        if not self.hidden: # output layer, apply softmax
 #            self.output = self.softmax(self.output)
             
-        if self.hidden: # hidden node, apply sigmoid
-            for i in range(len(self.weights[0])):
-                self.output[i] = self.__activate(self.__evaluate_node(i, x) + self.biases[i])
-        else: # output layer, apply softmax
-            for i in range(len(self.weights[0])):
-                self.output[i] = self.__evaluate_node(i, x) + self.biases[i]
-            self.output = self.softmax(self.output)
+#        if self.hidden: # hidden node, apply sigmoid
+#            for i in range(len(self.weights[0])):
+#                self.output[i] = self.__activate(self.__evaluate_node(i, x) + self.biases[i])
+#        else: # output layer, apply softmax
+#            for i in range(len(self.weights[0])):
+#                self.output[i] = self.__evaluate_node(i, x) + self.biases[i]
+#            self.output = self.softmax(self.output)
+
+
+        if self.hidden:  # hidden layer, use sigmoid
+            z = np.dot(x, self.weights) + self.biases
+            self.output = 1 / (1 + np.exp(-np.clip(z, -600, 600)))
+        else:  # output layer, use softmax
+            z = np.dot(x, self.weights) + self.biases
+            z = z - np.max(z)
+            exp_z = np.exp(z)
+            self.output = exp_z / np.sum(exp_z)
 
         return self.output
 
