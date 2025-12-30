@@ -25,6 +25,7 @@ class Sketchpad(Canvas):
         self.tag_raise("border")
         self.tag_raise("submit")
         self.tag_raise("reset")
+        self.tag_raise("label")
     def reset(self):
         self.delete("stroke")
         self.img = Image.new("L", (280, 280), color=255)
@@ -35,7 +36,7 @@ class Sketchpad(Canvas):
         arr = 255 - arr # invert so black=1, white=0
 
         return arr
-def run():
+def run(network):
     root = Tk()
     root.geometry("310x310")
     root.minsize(310, 310)
@@ -48,30 +49,46 @@ def run():
     sketch.grid(row=0, column=0, sticky="nsew")
 
     # Create submit button
-    sketch.create_rectangle(0, 0, 30, 30, fill="green", tags="submit")
-    sketch.create_line(10, 25, 25, 10, fill="white", width=3, tags="submit")
-    sketch.create_line(10, 25, 5, 20, fill="white", width=3, tags="submit")
+    sketch.create_rectangle(0, 280, 30, 310, fill="green", tags="submit")
+    sketch.create_line(10, 305, 25, 290, fill="white", width=3, tags="submit")
+    sketch.create_line(10, 305, 5, 300, fill="white", width=3, tags="submit")
     # Create reset button
-    sketch.create_rectangle(280, 0, 310, 30, fill="red", tags="reset")
-    sketch.create_line(285, 5, 305, 25, fill="white", width=3, tags="reset")
-    sketch.create_line(285, 25, 305, 5, fill="white", width=3, tags="reset")
+    sketch.create_rectangle(280, 280, 310, 310, fill="red", tags="reset")
+    sketch.create_line(285, 285, 305, 305, fill="white", width=3, tags="reset")
+    sketch.create_line(285, 305, 305, 285, fill="white", width=3, tags="reset")
     # Create a border around a 280x280 area
     sketch.create_rectangle(0, 0, 30, 310, fill="black", tags="border") # left border
     sketch.create_rectangle(0, 0, 310, 30, fill="black", tags="border") # top border
     sketch.create_rectangle(280, 0, 310, 310, fill="black", tags="border") # right border
     sketch.create_rectangle(0, 280, 310, 310, fill="black", tags="border") # bottom border
 
+    # Text label at the bottom center
+    result_text = sketch.create_text(
+        155, 15,
+        text="Draw a digit (0-9)",
+        fill="white",
+        font=("Arial", 12, "bold"),
+        tags="label"
+    )
+
     sketch.tag_raise("border")
     sketch.tag_raise("submit")
     sketch.tag_raise("reset")
+    sketch.tag_raise("label")
 
     def reset_canvas(event):
         sketch.reset()
+        sketch.itemconfig(result_text, text="Draw a digit (0-9)")
     def get_matrix(event):
         matrix = sketch.get_matrix()
         np.set_printoptions(linewidth=500)
         sketch.matrix = matrix
-        root.destroy()
+        
+        o = network.apply(matrix)
+        confidence, prediction = find_winner(o)
+        sketch.itemconfig(result_text, text=f"Class: {prediction}, Confidence: {(confidence * 100):.2f}%")
+
+        #root.destroy() # closes the window
         
     sketch.tag_bind("submit", "<Button-1>", get_matrix)
     sketch.tag_bind("reset", "<Button-1>", reset_canvas)
@@ -79,3 +96,14 @@ def run():
     matrix = sketch.matrix
     if matrix is not None:
         return matrix
+
+# Take highest value as the winner
+def find_winner(o):
+    high = o[0]
+    high_index = 0
+    for i in range(len(o)):
+        if o[i] > high:
+            high = o[i]
+            high_index = i
+
+    return high, high_index

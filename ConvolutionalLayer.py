@@ -25,15 +25,23 @@ class ConvolutionalLayer:
         assert 'pooling_dim' in config, "\'pooling_dim\' must be provided in a convolutional layer definition"
         self.pooling_dim = config['pooling_dim'] 
 
-        self.kernels = [np.empty((self.kernel_z, self.kernel_x, self.kernel_y)) for _ in range(self.kernel_count)]  # z, x, y
-        # scale standard deviation depending on layer size
-        # https://medium.com/@tylernisonoff/weight-initialization-for-cnns-a-deep-dive-into-he-initialization-50b03f37f53d
-        std = np.sqrt(2.0 / (self.kernel_z * self.kernel_x * self.kernel_y)) 
-        # randomly initialize weights
-        for kernel in self.kernels:
-            kernel[:] = np.random.randn(self.kernel_z, self.kernel_x, self.kernel_y) * std
+        self.kernels = None
+        if 'weights' in config:
+            self.kernels=[np.array(w) for w in config['weights']]
+        else:
+            self.kernels = [np.empty((self.kernel_z, self.kernel_x, self.kernel_y)) for _ in range(self.kernel_count)]  # z, x, y
+            # scale standard deviation depending on layer size
+            # https://medium.com/@tylernisonoff/weight-initialization-for-cnns-a-deep-dive-into-he-initialization-50b03f37f53d
+            std = np.sqrt(2.0 / (self.kernel_z * self.kernel_x * self.kernel_y)) 
+            # randomly initialize weights
+            for kernel in self.kernels:
+                kernel[:] = np.random.randn(self.kernel_z, self.kernel_x, self.kernel_y) * std
 
-        self.biases = np.zeros(self.kernel_count)
+        self.biases = None
+        if 'biases' in config:
+            self.biases = np.array(config['biases'])
+        else: 
+            self.biases = np.zeros(self.kernel_count)
 
         self.first_layer = False
 
@@ -337,3 +345,9 @@ class ConvolutionalLayer:
 
     def set_first_layer(self, state):
         self.first_layer = state
+
+    def get_weights(self):
+        return self.kernels
+
+    def get_biases(self):
+        return self.biases

@@ -19,6 +19,10 @@ class ConvolutionalNetwork:
 
         assert 'convolutional_layers' in config, "The config must provide an array for \'convolutional_layers\'"
         assert len(config['convolutional_layers']) >= 1, "\'convolutional_layers\' must not be empty"
+
+        self.trained_epochs = 0
+        if 'trained_epochs' in config:
+            self.trained_epochs = config['trained_epochs']
         
         prev_nodes = 28     # number of nodes in one dimension, hardcoded for this image but can make more general later
         kernel_z = 1        # depth of kernel. Starts as 1 for the single channel image
@@ -36,10 +40,13 @@ class ConvolutionalNetwork:
         if 'fully_connected_layers' in config and len(config['fully_connected_layers']) > 0:
             for fc_layer in config['fully_connected_layers']:
                 assert 'node_count' in fc_layer, "The config must provide a value for \'node_count\' in each fully connected layer definition"
-                self.fully_connected_layers.append(FullyConnectedLayer(self.learning_rate, prev_nodes, fc_layer['node_count'], hidden=True))
+                self.fully_connected_layers.append(FullyConnectedLayer(fc_layer, self.learning_rate, prev_nodes, fc_layer['node_count'], hidden=True))
                 prev_nodes = fc_layer['node_count']
 
-        self.output_layer = FullyConnectedLayer(self.learning_rate, prev_nodes, 10, hidden=False) # add output layer, hardcoded 10 classes
+        output_config = {}
+        if 'output_layer' in config:
+            output_config = config['output_layer']
+        self.output_layer = FullyConnectedLayer(output_config, self.learning_rate, prev_nodes, 10, hidden=False) # add output layer, hardcoded 10 classes
 
     # Feed a sample x through the network, and apply backpropagation learning
     def apply_and_learn(self, x, y):
@@ -72,6 +79,31 @@ class ConvolutionalNetwork:
         for layer in reversed(self.convolutional_layers):
             prop_error = layer.learn(prop_error)
 
+    def increase_epoch(self):
+        self.trained_epochs += 1
 
+    # saves the current weights and biases to the config and returns it
+    def get_network_variables(self, config):
+        config['trained_epochs'] = self.trained_epochs
+        
+        for i, conv_layer in enumerate(config['convolutional_layers']):
+            kernels = self.convolutional_layers[i].get_weights()
+            conv_layer['weights'] = [k.tolist() for k in kernels]
+            conv_layer['biases'] = self.convolutional_layers[i].get_biases().tolist()
+
+        if 'fully_connected_layers' in config and len(config['fully_connected_layers']) > 0:
+            for i, fc_layer in enumerate(config['fully_connected_layers']):
+                fc_layer['weights'] = self.fully_connected_layers[i].get_weights().tolist()
+                fc_layer['biases'] = self.fully_connected_layers[i].get_biases().tolist()
+
+        output_layer = {
+            'weights': self.output_layer.get_weights().tolist(),
+            'biases': self.output_layer.get_biases().tolist()
+        }
+        config['output_layer'] = output_layer
+
+        return config
+
+    
         
 
