@@ -63,7 +63,9 @@ class FullyConnectedLayer:
         else:  # output layer, use softmax
             z = np.dot(x, self.weights) + self.biases
             z = z - np.max(z)
-            exp_z = np.exp(z)
+            T = 400
+            print(z)
+            exp_z = np.exp(z / T)
             self.output = exp_z / np.sum(exp_z)
 
         return self.output

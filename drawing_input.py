@@ -62,7 +62,7 @@ def run(network):
     sketch.create_rectangle(280, 0, 310, 310, fill="black", tags="border") # right border
     sketch.create_rectangle(0, 280, 310, 310, fill="black", tags="border") # bottom border
 
-    # Text label at the bottom center
+    # Text label at the top center
     result_text = sketch.create_text(
         155, 15,
         text="Draw a digit (0-9)",
@@ -99,6 +99,7 @@ def run(network):
 
 # Take highest value as the winner
 def find_winner(o):
+    print(o)
     high = o[0]
     high_index = 0
     for i in range(len(o)):
