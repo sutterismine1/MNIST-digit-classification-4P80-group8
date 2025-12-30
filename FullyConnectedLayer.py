@@ -14,28 +14,34 @@ BASE = -0.25
 LOWEST_VAL = 0.001
 
 class FullyConnectedLayer:
-    def __init__(self, learning_rate, input_nodes, output_nodes, hidden):
+    def __init__(self, config, learning_rate, input_nodes, output_nodes, hidden):
         self.learning_rate = learning_rate
-        self.weights = np.empty([input_nodes, output_nodes])  # nodes[input_node][output_node]
-        self.biases = np.empty(output_nodes)
         self.error = np.empty(output_nodes)
         self.hidden = hidden
 
-        # randomly initialize weights
-        for i in range(len(self.weights)):
-            for j in range(len(self.weights[0])):
-                val = random.random() * RANGE + BASE
-                while abs(val) < LOWEST_VAL:     # Guarentee starting weights are not too small
+        self.weights = np.empty([input_nodes, output_nodes])  # nodes[input_node][output_node]
+        if 'weights' in config:
+            self.weights = np.array(config['weights'])
+        else:
+            # randomly initialize weights
+            for i in range(len(self.weights)):
+                for j in range(len(self.weights[0])):
                     val = random.random() * RANGE + BASE
+                    while abs(val) < LOWEST_VAL:     # Guarentee starting weights are not too small
+                        val = random.random() * RANGE + BASE
 
-                self.weights[i][j] = val
+                    self.weights[i][j] = val
 
-        # randomly initialize biases
-        for i in range(len(self.biases)):
-            val = random.random() * RANGE + BASE
-            while val < LOWEST_VAL:     # Guarentee starting biases are not too small
+        self.biases = np.empty(output_nodes)
+        if 'biases' in config:
+            self.biases = np.array(config['biases'])
+        else:
+            # randomly initialize biases
+            for i in range(len(self.biases)):
                 val = random.random() * RANGE + BASE
-            self.biases[i] = val
+                while val < LOWEST_VAL:     # Guarentee starting biases are not too small
+                    val = random.random() * RANGE + BASE
+                self.biases[i] = val
 
     # Feed an input vector x through this layer and return output vector
     def apply(self, x):
@@ -124,3 +130,9 @@ class FullyConnectedLayer:
         z = data - np.max(data) # log-sum-exp trick to avoid overflow
         exp_z = np.exp(z)
         return exp_z / np.sum(exp_z)
+
+    def get_weights(self):
+        return self.weights
+
+    def get_biases(self):
+        return self.biases

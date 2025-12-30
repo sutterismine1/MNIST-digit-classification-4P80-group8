@@ -22,7 +22,7 @@ test_labels_filepath = f'{input_path}/t10k-labels.idx1-ubyte'
 
 def main():
     # Read in arguments
-    if len(sys.argv) < 1:
+    if len(sys.argv) < 2:
         print("Please provide the config file.")
         exit(1)
 
@@ -49,16 +49,16 @@ def main():
 
     (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
 
-    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
-    y_train = y_train[:10000] # REMOVE AFTER
-    x_test = x_test[:2000]
-    y_test = y_test[:2000]
+#    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
+#    y_train = y_train[:10000] # REMOVE AFTER
+#    x_test = x_test[:10000]
+#    y_test = y_test[:10000]
     
     x_train = np.array(x_train, dtype=float) / 255.0
     x_test  = np.array(x_test, dtype=float) / 255.0
 
-    print(f"x_train min/max: {x_train.min()}/{x_train.max()}")
-    print(f"x_test min/max: {x_test.min()}/{x_test.max()}")
+#    print(f"x_train min/max: {x_train.min()}/{x_train.max()}")
+#    print(f"x_test min/max: {x_test.min()}/{x_test.max()}")
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
@@ -69,13 +69,14 @@ def main():
     network = ConvolutionalNetwork(config)
 
     output_file = open(output_filename+".csv", "w")
-    output_file.write("Epoch, Training Set, Test Set\n")
+    output_file.write("Epoch, Training Set, Test Set, Test Correct\n")
     output_file.flush()
 
     print("Starting Training")
     step = 0    # used to keep track of how many samples have been trained on
     for epoch in range(1, epochs+1):
         global_error = 0
+
         for index in data_map:
             o = network.apply_and_learn(x_train[index], y_train[index])
 
@@ -90,8 +91,7 @@ def main():
             r1, r2 = random.randint(0, len(x_train)-1), random.randint(0, len(x_train)-1)
             data_map[r1], data_map[r2] = data_map[r2], data_map[r1]
 
-        
-
+        print("Running Against Test Set")
         global_test_error = 0
         correct = 0
         for i in range(len(x_test)):
@@ -105,19 +105,20 @@ def main():
             if prediction == digit:
                 correct += 1
 
-            print(f"Result: {prediction == digit}, Confidence: {confidence * 100}%, Output: {o}")
+            #print(f"Result: {prediction == digit}, Confidence: {confidence * 100}%, Output: {o}")
 
-        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_test)}\n")
+        output_file.write(f"{epoch}, {global_error / len(x_train)}, {global_test_error / len(x_test)}, {correct / len(x_test) * 100}%\n")
         output_file.flush()
+
+        network.increase_epoch()
+        save_network(network.get_network_variables(config))
 
         print(f"Finished Epoch: {epoch}, Global Training Error: {global_error / len(x_train)}")
         print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
-        
 
     output_file.close()
 
-
-# Mean Squared error accross output vector
+# Mean Squared error across output vector
 def calculate_error_MSE(o, y):
     expected_output = [0.0 for _ in range(len(o))]
     expected_output[y] = 1.0
@@ -146,6 +147,15 @@ def find_winner(o):
             high_index = i
 
     return high, high_index
+
+# write network config to file
+def save_network(config):
+        name = config["output_filename"]
+        if "trained_epochs" in config:
+            name += f"_{config["trained_epochs"]}"
+        name += ".json"
+        with open(name, "w") as file:
+            json.dump(config, file, indent=4)
 
 
 if __name__ == "__main__":
