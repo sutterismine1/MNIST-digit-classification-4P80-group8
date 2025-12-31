@@ -5,7 +5,7 @@
 #
 # Data downloaded from https://www.kaggle.com/datasets/hojjatk/mnist-dataset/data
 
-from MnistDataloader import MnistDataloader
+from DataLoader import load_MNIST_data
 from ConvolutionalNetwork import ConvolutionalNetwork
 import json
 import sys
@@ -44,10 +44,7 @@ def main():
     output_filename = config['output_filename']
 
     print("Reading Data")
-    # Load MINST dataset
-    mnist_dataloader = MnistDataloader(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
-
-    (x_train, y_train), (x_test, y_test) = mnist_dataloader.load_data()
+    (x_train, y_train), (x_test, y_test) = load_MNIST_data(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
 
 #    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
 #    y_train = y_train[:10000] # REMOVE AFTER
@@ -56,9 +53,6 @@ def main():
     
     x_train = np.array(x_train, dtype=float) / 255.0
     x_test  = np.array(x_test, dtype=float) / 255.0
-
-#    print(f"x_train min/max: {x_train.min()}/{x_train.max()}")
-#    print(f"x_test min/max: {x_test.min()}/{x_test.max()}")
 
     # Create an ordering that will be shuffled between epochs
     data_map = [x for x in range(len(x_train))]
