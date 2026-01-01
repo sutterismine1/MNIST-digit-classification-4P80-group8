@@ -10,13 +10,6 @@ import sys
 import json
 from ConvolutionalNetwork import *
 
-# Filepaths
-input_path = './Data'
-training_images_filepath = f'{input_path}/train-images.idx3-ubyte'
-training_labels_filepath = f'{input_path}/train-labels.idx1-ubyte'
-test_images_filepath = f'{input_path}/t10k-images.idx3-ubyte'
-test_labels_filepath = f'{input_path}/t10k-labels.idx1-ubyte'
-
 def main():
     # Read in arguments
     if len(sys.argv) < 2:
