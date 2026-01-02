@@ -44,7 +44,7 @@ def main():
     x_train = np.array(x_train, dtype=float) / 255.0
     x_test  = np.array(x_test, dtype=float) / 255.0
 
-    loss_function = calculate_error_CCE         # CHANGE LOSS FUNCTION HERE AND IN learn_output() OF FullyConnectedLayer.py
+    loss_function = calculate_error_CCE
 
     print("Initializing Network")
     network = ConvolutionalNetwork(config)
@@ -54,8 +54,16 @@ def main():
     print("Running Against Test Set")
     global_test_error = 0
     correct = 0
+    class_count = 10  # magic number of 10 classes for digits 0-9, this line would need to be adjusted for different classification problems
+    # tp, fp, fn are used for the precision and recall metrics where tp = true positive, fp = false positive, fn = false negative
+    tp = np.zeros(class_count)
+    fp = np.zeros(class_count)
+    fn = np.zeros(class_count)
     for i in range(len(x_test)):
-        image, digit = x_test[i], y_test[i]   # Just testing on the training set until the CNN is correct
+        # print out the iteration every 100 examples
+        if i % 100 == 0:
+            print(f"{i}/{len(x_test)}")
+        image, digit = x_test[i], y_test[i]
         o = network.apply(image)
 
         global_test_error += loss_function(o, digit)
@@ -63,13 +71,18 @@ def main():
         confidence, prediction = find_winner(o)
 
         if prediction == digit:
-            correct += 1
+            tp[digit]      += 1 # true positive for digit that was correctly guessed
+        else:   # if prediction was incorrect
+            fp[prediction] += 1 # false positive for digit that was incorrectly guessed
+            fn[digit]      += 1 # flase negative for digit that should have been picked
 
         # print out the result of every test sample
         #print(f"Result: {prediction == digit}, Confidence: {confidence * 100}%, Output: {o}")
 
+    correct = np.sum(tp) # correct predictions is equal to sum of true positives
     print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
-
+    print(f"Test Recall: {tp/(tp+fn)}")
+    print(f"Test Precision: {tp/(tp+fp)}")
 
 # Mean Squared error across output vector
 def calculate_error_MSE(o, y):
