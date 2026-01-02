@@ -1,8 +1,8 @@
 {
-    "seed": 21463463,
+    "seed": 7414141,
     "learning_rate": 0.01,
     "epochs": 1000,
-    "output_filename":"CNN_21463463",
+    "output_filename":"CNN_E",
     "convolutional_layers": [
         {
             "kernel_count": 10,

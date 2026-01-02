@@ -1,0 +1,25 @@
+{
+    "seed": 672622,
+    "learning_rate": 0.01,
+    "epochs": 1000,
+    "output_filename":"CNN_C",
+    "convolutional_layers": [
+        {
+            "kernel_count": 6,
+            "kernel_dim": 5,
+            "padding": 0,
+            "pooling_dim": 2
+        },
+        {
+            "kernel_count": 6,
+            "kernel_dim": 5,
+            "padding": 0,
+            "pooling_dim": 2
+        }
+    ],
+    "fully_connected_layers": [
+        {
+            "node_count": 16 
+        }
+    ]
+}
