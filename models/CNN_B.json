@@ -2,7 +2,7 @@
     "seed": 555124141,
     "learning_rate": 0.01,
     "epochs": 1000,
-    "output_filename": "CNN_555124141",
+    "output_filename": "CNN_B",
     "convolutional_layers": [
         {
             "kernel_count": 6,
