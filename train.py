@@ -20,6 +20,9 @@ training_labels_filepath = f'{input_path}/train-labels.idx1-ubyte'
 test_images_filepath = f'{input_path}/t10k-images.idx3-ubyte'
 test_labels_filepath = f'{input_path}/t10k-labels.idx1-ubyte'
 
+# Used for keeping track of average training error in block_error output file
+BLOCK_SIZE = 250
+
 def main():
     # Read in arguments
     if len(sys.argv) < 2:
@@ -42,14 +45,10 @@ def main():
 
     assert 'output_filename' in config, "The config must provide a value for \'output_filename\'"
     output_filename = config['output_filename']
+    block_error_output_filename = config['output_filename'] + "_block_error"
 
     print("Reading Data")
     (x_train, y_train), (x_test, y_test) = load_MNIST_data(training_images_filepath, training_labels_filepath, test_images_filepath, test_labels_filepath)
-
-#    x_train = x_train[:10000] # REMOVE AFTER, just doing 10000 samples to test correctness of learning algorithm implementation
-#    y_train = y_train[:10000] # REMOVE AFTER
-#    x_test = x_test[:10000]
-#    y_test = y_test[:10000]
     
     x_train = np.array(x_train, dtype=float) / 255.0
     x_test  = np.array(x_test, dtype=float) / 255.0
@@ -66,18 +65,28 @@ def main():
     output_file.write("Epoch, Training Set, Test Set, Test Correct\n")
     output_file.flush()
 
+    block_error_output_file = open(block_error_output_filename+".csv", "w")
+    block_error_output_file.write("Trained Samples, Average Training Error\n")
+    block_error_output_file.flush()
+
     print("Starting Training")
     step = 0    # used to keep track of how many samples have been trained on
+    block_error = 0
     for epoch in range(1, epochs+1):
         global_error = 0
 
         for index in data_map:
             o = network.apply_and_learn(x_train[index], y_train[index])
 
-            global_error += loss_function(o, y_train[index])
+            error = loss_function(o, y_train[index])
+            global_error += error
+            block_error += error
             step += 1
 
-            if step % 200 == 0 and step != 0:
+            if step % BLOCK_SIZE == 0 and step != 0:
+                block_error_output_file.write(f"{step}, {block_error / BLOCK_SIZE}\n")
+                block_error_output_file.flush()
+                block_error = 0
                 print(step)
 
         # shuffle data_map
@@ -111,6 +120,7 @@ def main():
         print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
 
     output_file.close()
+    block_error_output_file.close()
 
 # Mean Squared error across output vector
 def calculate_error_MSE(o, y):

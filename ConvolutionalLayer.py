@@ -61,12 +61,7 @@ class ConvolutionalLayer:
 
         self.activated_maps = np.empty((len(self.feature_maps), len(self.feature_maps[0]), len(self.feature_maps[0][0])))
         self.d_activated_maps = np.empty((len(self.feature_maps), len(self.feature_maps[0]), len(self.feature_maps[0][0])))
-        '''
-        for layer in range(self.kernel_count):
-            for i in range(len(self.feature_maps[0])):
-                for j in range(len(self.feature_maps[0][0])):
-                    self.activated_maps[layer][i][j] = self.__activate(i, j, layer)
-        '''
+
         # vectorized ReLu
         self.activated_maps = np.maximum(0.0, self.feature_maps)
         self.d_activated_maps = (self.feature_maps > 0.0).astype(float)
@@ -124,26 +119,6 @@ class ConvolutionalLayer:
         self.d_activated_maps[layer][i][j] = 0 if x < 0 else 1
         return 0 if x < 0 else x
 
-    '''
-    # Max Pool layer
-    # self.d_pool keeps track of the derivative of the pooling layer. 
-    # For max pooling, the winning position receives a 1, while the other positions are 0.
-    def __max_pool(self, i, j, layer):
-        maximum = float("-inf")
-        max_i = 0
-        max_j = 0
-        for k in range(self.pooling_dim):
-            for l in range(self.pooling_dim):
-                val = self.activated_maps[layer][i+k][j+l]
-                if val > maximum:
-                    maximum = val
-                    max_i = i+k
-                    max_j = j+l
-
-            self.d_pool[layer][max_i][max_j] = 1
-            return maximum
-    '''
-
     # Max Pool layer
     # self.d_pool keeps track of the derivative of the pooling layer. 
     # For max pooling, the winning position receives a true, while the other positions are defalt false.
@@ -170,25 +145,7 @@ class ConvolutionalLayer:
     # https://www.youtube.com/watch?v=vbUozbkMhI0
     def learn(self, prop_error):
         # dL/dP passed in as prop_error
-        '''
-        # calculate dL/dC using self.d_pool
-        for layer in range(self.kernel_count):
-            for i in range(len(prop_error[0])):
-                for j in range(len(prop_error[0][0])):
-                    self.d_pool[
-                    layer, 
-                    i*self.pooling_dim:i*self.pooling_dim+self.pooling_dim, 
-                    j*self.pooling_dim:j*self.pooling_dim+self.pooling_dim
-                    ] *= prop_error[layer][i][j]
-        
-        # calculate dL/dZ
-        # dL/dZ = dL/dC * dC/dZ
-        # dL/dC is in self.d_pool
-        # dC/dZ is in self.d_activated_maps
-        dL_dZ = self.d_pool * self.d_activated_maps
-        
-        '''
-        # calculate dL/dC using d_pool_switches instead
+        # calculate dL/dC using d_pool_switches
         dL_dC = np.zeros_like(self.activated_maps)
 
         for layer in range(self.kernel_count):
@@ -210,22 +167,6 @@ class ConvolutionalLayer:
         # dL/dZ = dL/dC * dC/dZ
         dL_dZ = dL_dC * self.d_activated_maps
 
-        '''
-        # Calculate error to propagate backwards (dL/dX)
-        dL_dX = None
-        if not self.first_layer:    # Don't calculate if you are the first layer, since no preceeding layer needs the propagated error
-            dL_dX = np.zeros(self.input.shape)
-            for k, kernel in enumerate(self.kernels):
-                for channel in range(self.kernel_z):
-                    # !!! I don't think this is right !!!
-                    dL_dX[channel] += self.convolve_2D(
-                    np.pad(
-                    dL_dZ[k:k+1], 
-                    ((0,0), (self.kernel_x - 1, self.kernel_x - 1), 
-                    (self.kernel_y - 1, self.kernel_y - 1))), 
-                    np.rot90(kernel[channel], 2))
-        '''
-
         # Calculate error to propagate backwards (dL/dX)
         dL_dX = None
         if not self.first_layer:
@@ -242,52 +183,14 @@ class ConvolutionalLayer:
                         ),
                         np.rot90(self.kernels[k][channel], 2)
                     )
-        
-        '''
-        # Calculate weight and bias adjustments for each kernel
-        for i, error in enumerate(dL_dZ):
-            dL_dK = self.convolve_2D_outer(self.input, error)
-            self.kernels[i] -= self.learning_rate * dL_dK # dL/dK
-            self.biases[i] -= self.learning_rate * np.sum(error)  # dL/dB
-        '''
-
+    
         # Calculate weight and bias adjustments for each kernel
         for k in range(self.kernel_count):
             dL_dK = self.convolve_2D_outer(self.input, dL_dZ[k])
             self.kernels[k] -= self.learning_rate * dL_dK
             self.biases[k] -= self.learning_rate * np.mean(dL_dZ[k])
-            '''
-            for z in range(self.kernel_z):
-                for x in range(self.kernel_x):
-                    for y in range(self.kernel_y):
-                        self.kernels[k][z, x, y] -= self.learning_rate * np.sum(
-                            self.input[z,
-                                    x:x + dL_dZ.shape[1],
-                                    y:y + dL_dZ.shape[2]] 
-                                    * dL_dZ[k]
-                        )
-
-            # bias update
-            self.biases[k] -= self.learning_rate * np.mean(dL_dZ[k])
-            '''
 
         return dL_dX    # propagate error backwards
-
-    # 3D-3D -> 3D output
-    def convolve_3D(self, x, kernel):
-        res = np.zeros([
-            len(x),                                                 # z_dim
-            len(x[0]) - len(kernel[0]) + 1,          # x_dim 
-            len(x[0][0]) - len(kernel[0][0]) + 1     # y_dim
-        ])
-
-        for layer in range(len(res)):
-            for i in range(len(res[0])):
-                for j in range(len(res[0][0])):
-                    view = x[layer, i:i + len(kernel[0]), j:j + len(kernel[0][0])]
-                    res[layer][i][j] = np.sum(view * kernel[layer])
-
-        return res
 
     # 3D-2D -> 3D output
     def convolve_2D_outer(self, x, kernel):
@@ -304,23 +207,6 @@ class ConvolutionalLayer:
                     res[layer][i][j] = np.sum(view * kernel)
 
         return res
-    
-    '''
-    # 3D-2D -> 2D output
-    def convolve_2D(self, x, kernel):
-        res = np.zeros([
-            len(x[0]) - len(kernel) + 1,          # x_dim 
-            len(x[0][0]) - len(kernel[0]) + 1     # y_dim
-        ])
-
-        for layer in range(len(x)):
-            for i in range(len(res)):
-                for j in range(len(res[0])):
-                    view = x[layer, i:i + len(kernel), j:j + len(kernel[0])]
-                    res[i][j] += np.sum(view * kernel)
-
-        return res
-    '''
     
     # 3D-2D -> 2D output
     def convolve_2D(self, x, kernel):
@@ -341,7 +227,6 @@ class ConvolutionalLayer:
                     res[i, j] += np.sum(view * kernel)
 
         return res
-
 
     def set_first_layer(self, state):
         self.first_layer = state
