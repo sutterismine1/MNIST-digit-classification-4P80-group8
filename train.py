@@ -156,11 +156,12 @@ def find_winner(o):
 def save_network(config):
         name = config["output_filename"]
         if "trained_epochs" in config:
-            name += f"_{config["trained_epochs"]}"
+            name += f"_{config['trained_epochs']}"
         name += ".json"
         with open(name, "w") as file:
             json.dump(config, file, indent=4)
 
 
 if __name__ == "__main__":
+
     main()
