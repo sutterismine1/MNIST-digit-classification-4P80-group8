@@ -81,8 +81,8 @@ def main():
 
     correct = np.sum(tp) # correct predictions is equal to sum of true positives
     print(f"Test Correct: {correct / len(x_test) * 100}%, Global Test Error: {global_test_error / len(x_test)}")
-    print(f"Test Recall: {tp/(tp+fn)}")
-    print(f"Test Precision: {tp/(tp+fp)}")
+    print(f"Test Recall: {tp/(tp+fn)*100}")
+    print(f"Test Precision: {tp/(tp+fp)*100}")
 
 # Mean Squared error across output vector
 def calculate_error_MSE(o, y):
