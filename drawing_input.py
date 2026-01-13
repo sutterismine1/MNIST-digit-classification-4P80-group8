@@ -41,6 +41,7 @@ def run(network):
     root.geometry("310x310")
     root.minsize(310, 310)
     root.minsize(310, 310)
+    root.title("Digit Classifier")
     root.resizable(False, False)
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
